@@ -6,6 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/pkg/errors"
 	_ "gomodules.xyz/gdrive-utils"
 	gdrive_utils "gomodules.xyz/gdrive-utils"
@@ -13,10 +18,6 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
-	"log"
-	"path"
-	"strings"
-	"time"
 )
 
 func handleError(err error, message string) {
@@ -71,9 +72,9 @@ func main() {
 	fmt.Println(folderId)
 
 	docId, err := CopyDoc(svcDrive, svcDocs, fileId, folderId, "Account Interview", map[string]string{
-		"{{email}}": email,
+		"{{email}}":      email,
 		"{{start-time}}": time.Now().Format(time.RFC3339),
-		"{{end-time}}": time.Now().Add(1*time.Hour).Format(time.RFC3339),
+		"{{end-time}}":   time.Now().Add(1 * time.Hour).Format(time.RFC3339),
 	})
 	fmt.Println("user file id", docId)
 
@@ -96,7 +97,7 @@ func AddPermission(svc *drive.Service, docId string, email string, role string) 
 }
 
 func RevokePermission(svc *drive.Service, docId string, email string) error {
-	call := svc.Permissions.List(docId).
+	call := svc.Permissions.List(docId)
 	var perms []*drive.Permission
 	err := call.Pages(context.TODO(), func(resp *drive.PermissionList) error {
 		perms = append(perms, resp.Permissions...)
