@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path"
 	"strings"
 	"time"
 
 	"google.golang.org/api/googleapi"
 
+	"github.com/pkg/errors"
 	_ "gomodules.xyz/gdrive-utils"
 	gdrive_utils "gomodules.xyz/gdrive-utils"
 	"google.golang.org/api/drive/v3"
@@ -58,7 +60,17 @@ func main() {
 	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
 	handleError(err, "Error creating Drive client")
 
-	AddPermission(service)
+	//_, err = FindParentFolderId(service, fileId)
+	//handleError(err, "Error finding parent folder id")
+
+	folderId, err := GetFolderId(service, fileId, "candidates/tamal.saha@gmail.com")
+	handleError(err, "Error finding parent folder id")
+	fmt.Println(folderId)
+
+	// folders := strings.Split(path.Clean(""), "/")
+	// fmt.Println(folders, path.Clean(""))
+
+	// AddPermission(service)
 	// ListPlaylistItems(service, "PLoiT1Gv2KR1gc4FN0f7w92RhAHTKbPotT")
 }
 
@@ -90,7 +102,56 @@ func AddPermission(svc *drive.Service) {
 	if err != nil {
 		panic(err)
 	}
-	data, _ := json.MarshalIndent(p, "", "  ")
+	printJSON(p)
+}
+
+func FindParentFolderId(svc *drive.Service, configDocId string) (string, error) {
+	d, err := svc.Files.Get(configDocId).Fields("parents").Do()
+	if err != nil {
+		return "", err
+	}
+	return d.Parents[0], nil
+}
+
+func GetFolderId(svc *drive.Service, configDocId string, p string) (string, error) {
+	parentFolderId, err := FindParentFolderId(svc, configDocId)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to detect root folder id")
+	}
+	p = path.Clean(p)
+	// empty path (p == "")
+	if p == "." {
+		return parentFolderId, nil
+	}
+	folders := strings.Split(p, "/")
+	for _, folderName := range folders {
+		// https://developers.google.com/drive/api/v3/search-files
+		q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", folderName, parentFolderId)
+		files, err := svc.Files.List().Q(q).Spaces("drive").Fields("id").Do()
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to find folder %s inside parent folder %s", folderName, parentFolderId)
+		}
+		if len(files.Files) > 0 {
+			parentFolderId = files.Files[0].Id
+		} else {
+			// https://developers.google.com/drive/api/v3/folder#java
+			folderMetadata := &drive.File{
+				Name:     folderName,
+				MimeType: "application/vnd.google-apps.folder",
+				Parents:  []string{parentFolderId},
+			}
+			folder, err := svc.Files.Create(folderMetadata).Fields("id").Do()
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to create folder %s inside parent folder %s", folderName, parentFolderId)
+			}
+			parentFolderId = folder.Id
+		}
+	}
+	return parentFolderId, nil
+}
+
+func printJSON(v interface{}) {
+	data, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(data))
 }
 
