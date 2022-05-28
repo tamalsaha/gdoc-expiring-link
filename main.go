@@ -3,13 +3,17 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"google.golang.org/api/googleapi"
 	"log"
 	"strings"
+	"time"
 
-	"golang.org/x/net/context"
 	_ "gomodules.xyz/gdrive-utils"
 	gdrive_utils "gomodules.xyz/gdrive-utils"
+	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
 )
@@ -47,17 +51,46 @@ func channelsListByUsername(service *youtube.Service, parts []string, channelID 
 const channelID = "UCxObRDZ0DtaQe_cCP-dN-xg"
 
 func main() {
-	ctx := context.Background()
-
 	client, err := gdrive_utils.DefaultClient(".", youtube.YoutubeReadonlyScope)
 	handleError(err, "Error creating YouTube client")
-	service, err := youtube.NewService(ctx, option.WithHTTPClient(client))
-	handleError(err, "Error creating YouTube client")
 
-	// channelsListByUsername(service, strings.Split("snippet,contentDetails,statistics", ","), channelID)
+	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
+	handleError(err, "Error creating Drive client")
 
-	ListPlaylists(service, channelID)
+	AddPermission(service)
 	// ListPlaylistItems(service, "PLoiT1Gv2KR1gc4FN0f7w92RhAHTKbPotT")
+}
+
+const fileId = "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
+
+func AddPermission(svc *drive.Service) {
+	expirationTime := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
+
+	p, err := svc.Permissions.Create(fileId, &drive.Permission{
+		AllowFileDiscovery:         false,
+		Deleted:                    false,
+		DisplayName:                "",
+		Domain:                     "",
+		EmailAddress:               "tamal.saha@gmail.com",
+		ExpirationTime:             expirationTime,
+		Id:                         "",
+		Kind:                       "",
+		PendingOwner:               false,
+		PermissionDetails:          nil,
+		PhotoLink:                  "",
+		Role:                       "writer",
+		TeamDrivePermissionDetails: nil,
+		Type:                       "user",
+		View:                       "",
+		ServerResponse:             googleapi.ServerResponse{},
+		ForceSendFields:            nil,
+		NullFields:                 nil,
+	}).Do()
+	if err != nil {
+		panic(err)
+	}
+	data, _ := json.MarshalIndent(p, "", "  ")
+	fmt.Println(string(data))
 }
 
 // playlist
