@@ -86,7 +86,7 @@ func AddPermission(svc *drive.Service) {
 		ServerResponse:             googleapi.ServerResponse{},
 		ForceSendFields:            nil,
 		NullFields:                 nil,
-	}).Do()
+	}).Fields("id").Do()
 	if err != nil {
 		panic(err)
 	}
