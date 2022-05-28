@@ -78,16 +78,14 @@ func main() {
 	})
 	fmt.Println("user file id", docId)
 
-	AddPermission(svcDrive, docId, email, "writer")
-	// ListPlaylistItems(service, "PLoiT1Gv2KR1gc4FN0f7w92RhAHTKbPotT")
+	// AddPermission(svcDrive, docId, email, "writer")
 
-	// RevokePermission(service, fileId, "tamal.saha@gmail.com")
+	RevokePermission(svcDrive, docId, "tamal.saha@gmail.com")
 }
 
 const fileId = "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
 
 func AddPermission(svc *drive.Service, docId string, email string, role string) error {
-	// expirationTime := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 	_, err := svc.Permissions.Create(docId, &drive.Permission{
 		EmailAddress: email,
 		Role:         role,
@@ -195,37 +193,4 @@ func CopyDoc(svcDrive *drive.Service, svcDocs *docs.Service, templateDocId strin
 func printJSON(v interface{}) {
 	data, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(data))
-}
-
-// playlist
-// playlistItem
-// thumbnail
-// video
-
-// https://developers.google.com/youtube/v3/guides/implementation/playlists
-func ListPlaylists(service *youtube.Service, channelID string) ([]*youtube.Playlist, error) {
-	call := service.Playlists.List(strings.Split("snippet,contentDetails,status", ","))
-	// call = call.Fields("items(id,snippet(title,description,publishedAt,tags,thumbnails(high)),contentDetails,status)")
-	call = call.ChannelId(channelID)
-
-	var out []*youtube.Playlist
-	err := call.Pages(context.TODO(), func(resp *youtube.PlaylistListResponse) error {
-		out = append(out, resp.Items...)
-		return nil
-	})
-	return out, err
-}
-
-// https://developers.google.com/youtube/v3/docs/playlistItems/list
-func ListPlaylistItems(service *youtube.Service, playlistID string) ([]*youtube.PlaylistItem, error) {
-	call := service.PlaylistItems.List(strings.Split("snippet,contentDetails,status", ","))
-	call = call.Fields("items(snippet(title,description,position,thumbnails(high)),contentDetails,status)")
-	call = call.PlaylistId(playlistID)
-
-	var out []*youtube.PlaylistItem
-	err := call.Pages(context.Background(), func(resp *youtube.PlaylistItemListResponse) error {
-		out = append(out, resp.Items...)
-		return nil
-	})
-	return out, err
 }
