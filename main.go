@@ -17,7 +17,6 @@ import (
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
-	"google.golang.org/api/youtube/v3"
 )
 
 func handleError(err error, message string) {
@@ -29,31 +28,8 @@ func handleError(err error, message string) {
 	}
 }
 
-// https://developers.google.com/youtube/v3/guides/working_with_channel_ids
-// Use channel id
-// Youtube Studio > Customization > Basic Info
-func channelsListByUsername(service *youtube.Service, parts []string, channelID string) {
-	call := service.Channels.List(parts)
-	call = call.Id(channelID)
-	response, err := call.Do()
-	handleError(err, "")
-
-	fmt.Println(fmt.Sprintf("This channel's ID is %s. Its title is '%s', "+
-		"and it has %d views.",
-		response.Items[0].Id,
-		response.Items[0].Snippet.Title,
-		response.Items[0].Statistics.ViewCount))
-}
-
-// https://developers.google.com/youtube/v3/getting-started#partial
-// parts vs fields
-// parts is top level section
-// fields are fields inside that section
-
-const channelID = "UCxObRDZ0DtaQe_cCP-dN-xg"
-
 func main() {
-	client, err := gdrive_utils.DefaultClient(".", youtube.YoutubeReadonlyScope)
+	client, err := gdrive_utils.DefaultClient(".")
 	handleError(err, "Error creating YouTube client")
 
 	svcDrive, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
