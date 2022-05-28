@@ -54,9 +54,9 @@ func main() {
 	})
 	fmt.Println("user file id", docId)
 
-	// AddPermission(svcDrive, docId, email, "writer")
+	AddPermission(svcDrive, docId, email, "writer")
 
-	RevokePermission(svcDrive, docId, "tamal.saha@gmail.com")
+	// RevokePermission(svcDrive, docId, "tamal.saha@gmail.com")
 }
 
 const fileId = "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
@@ -131,39 +131,51 @@ func GetFolderId(svc *drive.Service, configDocId string, p string) (string, erro
 }
 
 func CopyDoc(svcDrive *drive.Service, svcDocs *docs.Service, templateDocId string, folderId string, docName string, replacements map[string]string) (string, error) {
-	// https://developers.google.com/docs/api/how-tos/documents#copying_an_existing_document
-	copyMetadata := &drive.File{
-		Name:    docName,
-		Parents: []string{folderId},
-	}
-	doc, err := svcDrive.Files.Copy(templateDocId, copyMetadata).Fields("id", "parents").Do()
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to copy template doc %s into folder %s", templateDocId, folderId)
-	}
-	fmt.Println("doc id:", doc.Id)
+	var docId string
 
-	if len(replacements) > 0 {
-		// https://developers.google.com/docs/api/how-tos/merge
-		req := &docs.BatchUpdateDocumentRequest{
-			Requests: make([]*docs.Request, 0, len(replacements)),
+	// https://developers.google.com/drive/api/v3/search-files
+	q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.document' and '%s' in parents", docName, folderId)
+	files, err := svcDrive.Files.List().Q(q).Spaces("drive").Do()
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to find doc %s inside parent folder %s", docName, folderId)
+	}
+	if len(files.Files) > 0 {
+		docId = files.Files[0].Id
+	} else {
+		// https://developers.google.com/docs/api/how-tos/documents#copying_an_existing_document
+		copyMetadata := &drive.File{
+			Name:    docName,
+			Parents: []string{folderId},
 		}
-		for k, v := range replacements {
-			req.Requests = append(req.Requests, &docs.Request{
-				ReplaceAllText: &docs.ReplaceAllTextRequest{
-					ContainsText: &docs.SubstringMatchCriteria{
-						MatchCase: true,
-						Text:      k,
-					},
-					ReplaceText: v,
-				},
-			})
-		}
-		_, err := svcDocs.Documents.BatchUpdate(doc.Id, req).Do()
+		doc, err := svcDrive.Files.Copy(templateDocId, copyMetadata).Fields("id").Do()
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to replace template fields in doc %s", doc.Id)
+			return "", errors.Wrapf(err, "failed to copy template doc %s into folder %s", templateDocId, folderId)
+		}
+		docId = doc.Id
+
+		if len(replacements) > 0 {
+			// https://developers.google.com/docs/api/how-tos/merge
+			req := &docs.BatchUpdateDocumentRequest{
+				Requests: make([]*docs.Request, 0, len(replacements)),
+			}
+			for k, v := range replacements {
+				req.Requests = append(req.Requests, &docs.Request{
+					ReplaceAllText: &docs.ReplaceAllTextRequest{
+						ContainsText: &docs.SubstringMatchCriteria{
+							MatchCase: true,
+							Text:      k,
+						},
+						ReplaceText: v,
+					},
+				})
+			}
+			_, err := svcDocs.Documents.BatchUpdate(docId, req).Do()
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to replace template fields in doc %s", docId)
+			}
 		}
 	}
-	return doc.Id, nil
+	return docId, nil
 }
 
 func printJSON(v interface{}) {
