@@ -45,7 +45,7 @@ func main() {
 
 	folderId, err := GetFolderId(svcDrive, fileId, "candidates/"+email)
 	handleError(err, "Error finding parent folder id")
-	fmt.Println(folderId)
+	fmt.Println("parent folder id", folderId)
 
 	docId, err := CopyDoc(svcDrive, svcDocs, fileId, folderId, "Account Interview", map[string]string{
 		"{{email}}":      email,
@@ -54,9 +54,10 @@ func main() {
 	})
 	fmt.Println("user file id", docId)
 
-	AddPermission(svcDrive, docId, email, "writer")
+	// AddPermission(svcDrive, docId, email, "writer")
 
-	// RevokePermission(svcDrive, docId, "tamal.saha@gmail.com")
+	err = RevokePermission(svcDrive, docId, email)
+	handleError(err, "RevokePermission")
 }
 
 const fileId = "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
@@ -70,13 +71,21 @@ func AddPermission(svc *drive.Service, docId string, email string, role string) 
 	return err
 }
 
+// https://developers.google.com/youtube/v3/getting-started#partial
+// parts vs fields
+// parts is top level section
+// fields are fields inside that section
+
 func RevokePermission(svc *drive.Service, docId string, email string) error {
 	call := svc.Permissions.List(docId)
+	call = call.Fields("permissions(id,role,type,emailAddress)")
 	var perms []*drive.Permission
 	err := call.Pages(context.TODO(), func(resp *drive.PermissionList) error {
 		perms = append(perms, resp.Permissions...)
 		return nil
 	})
+	printJSON(perms)
+
 	for _, perm := range perms {
 		if perm.EmailAddress == email {
 			return svc.Permissions.Delete(docId, perm.Id).Do()
