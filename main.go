@@ -6,19 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
+	_ "gomodules.xyz/gdrive-utils"
+	gdrive_utils "gomodules.xyz/gdrive-utils"
+	"google.golang.org/api/docs/v1"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
+	"google.golang.org/api/youtube/v3"
 	"log"
 	"path"
 	"strings"
 	"time"
-
-	"google.golang.org/api/googleapi"
-
-	"github.com/pkg/errors"
-	_ "gomodules.xyz/gdrive-utils"
-	gdrive_utils "gomodules.xyz/gdrive-utils"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
-	"google.golang.org/api/youtube/v3"
 )
 
 func handleError(err error, message string) {
@@ -57,52 +55,59 @@ func main() {
 	client, err := gdrive_utils.DefaultClient(".", youtube.YoutubeReadonlyScope)
 	handleError(err, "Error creating YouTube client")
 
-	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
+	svcDrive, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
 	handleError(err, "Error creating Drive client")
+
+	svcDocs, err := docs.NewService(context.TODO(), option.WithHTTPClient(client))
+	handleError(err, "Error creating Docs client")
 
 	//_, err = FindParentFolderId(service, fileId)
 	//handleError(err, "Error finding parent folder id")
 
-	folderId, err := GetFolderId(service, fileId, "candidates/tamal.saha@gmail.com")
+	email := "tamal.saha@gmail.com"
+
+	folderId, err := GetFolderId(svcDrive, fileId, "candidates/"+email)
 	handleError(err, "Error finding parent folder id")
 	fmt.Println(folderId)
 
-	// folders := strings.Split(path.Clean(""), "/")
-	// fmt.Println(folders, path.Clean(""))
+	docId, err := CopyDoc(svcDrive, svcDocs, fileId, folderId, "Account Interview", map[string]string{
+		"{{email}}": email,
+		"{{start-time}}": time.Now().Format(time.RFC3339),
+		"{{end-time}}": time.Now().Add(1*time.Hour).Format(time.RFC3339),
+	})
+	fmt.Println("user file id", docId)
 
-	// AddPermission(service)
+	AddPermission(svcDrive, docId, email, "writer")
 	// ListPlaylistItems(service, "PLoiT1Gv2KR1gc4FN0f7w92RhAHTKbPotT")
+
+	// RevokePermission(service, fileId, "tamal.saha@gmail.com")
 }
 
 const fileId = "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
 
-func AddPermission(svc *drive.Service) {
-	expirationTime := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
-
-	p, err := svc.Permissions.Create(fileId, &drive.Permission{
-		AllowFileDiscovery:         false,
-		Deleted:                    false,
-		DisplayName:                "",
-		Domain:                     "",
-		EmailAddress:               "tamal.saha@gmail.com",
-		ExpirationTime:             expirationTime,
-		Id:                         "",
-		Kind:                       "",
-		PendingOwner:               false,
-		PermissionDetails:          nil,
-		PhotoLink:                  "",
-		Role:                       "writer",
-		TeamDrivePermissionDetails: nil,
-		Type:                       "user",
-		View:                       "",
-		ServerResponse:             googleapi.ServerResponse{},
-		ForceSendFields:            nil,
-		NullFields:                 nil,
+func AddPermission(svc *drive.Service, docId string, email string, role string) error {
+	// expirationTime := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
+	_, err := svc.Permissions.Create(docId, &drive.Permission{
+		EmailAddress: email,
+		Role:         role,
+		Type:         "user",
 	}).Fields("id").Do()
-	if err != nil {
-		panic(err)
+	return err
+}
+
+func RevokePermission(svc *drive.Service, docId string, email string) error {
+	call := svc.Permissions.List(docId).
+	var perms []*drive.Permission
+	err := call.Pages(context.TODO(), func(resp *drive.PermissionList) error {
+		perms = append(perms, resp.Permissions...)
+		return nil
+	})
+	for _, perm := range perms {
+		if perm.EmailAddress == email {
+			return svc.Permissions.Delete(docId, perm.Id).Do()
+		}
 	}
-	printJSON(p)
+	return err
 }
 
 func FindParentFolderId(svc *drive.Service, configDocId string) (string, error) {
@@ -127,7 +132,7 @@ func GetFolderId(svc *drive.Service, configDocId string, p string) (string, erro
 	for _, folderName := range folders {
 		// https://developers.google.com/drive/api/v3/search-files
 		q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", folderName, parentFolderId)
-		files, err := svc.Files.List().Q(q).Spaces("drive").Fields("id").Do()
+		files, err := svc.Files.List().Q(q).Spaces("drive").Do()
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to find folder %s inside parent folder %s", folderName, parentFolderId)
 		}
@@ -148,6 +153,42 @@ func GetFolderId(svc *drive.Service, configDocId string, p string) (string, erro
 		}
 	}
 	return parentFolderId, nil
+}
+
+func CopyDoc(svcDrive *drive.Service, svcDocs *docs.Service, templateDocId string, folderId string, docName string, replacements map[string]string) (string, error) {
+	// https://developers.google.com/docs/api/how-tos/documents#copying_an_existing_document
+	copyMetadata := &drive.File{
+		Name:    docName,
+		Parents: []string{folderId},
+	}
+	doc, err := svcDrive.Files.Copy(templateDocId, copyMetadata).Fields("id", "parents").Do()
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to copy template doc %s into folder %s", templateDocId, folderId)
+	}
+	fmt.Println("doc id:", doc.Id)
+
+	if len(replacements) > 0 {
+		// https://developers.google.com/docs/api/how-tos/merge
+		req := &docs.BatchUpdateDocumentRequest{
+			Requests: make([]*docs.Request, 0, len(replacements)),
+		}
+		for k, v := range replacements {
+			req.Requests = append(req.Requests, &docs.Request{
+				ReplaceAllText: &docs.ReplaceAllTextRequest{
+					ContainsText: &docs.SubstringMatchCriteria{
+						MatchCase: true,
+						Text:      k,
+					},
+					ReplaceText: v,
+				},
+			})
+		}
+		_, err := svcDocs.Documents.BatchUpdate(doc.Id, req).Do()
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to replace template fields in doc %s", doc.Id)
+		}
+	}
+	return doc.Id, nil
 }
 
 func printJSON(v interface{}) {
