@@ -41,17 +41,21 @@ func main() {
 	handleError(err, "Error creating Sheets client")
 
 	configDocId := "1KB_Efi9jQcJ0_tCRF4fSLc6TR7QxaBKg05cKXAwbC9E"
-	qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
-	now := time.Now()
-	cfg := QuestionConfig{
-		ConfigType:            ConfigTypeQuestion,
-		QuestionTemplateDocId: qaTemplateDocId,
-		StartDate:             Date{now},
-		EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
-		DurationMinutes:       90,                                // 60 mins
-	}
-	err = SaveConfig(svcSheets, configDocId, cfg)
+	//qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
+	//now := time.Now()
+	//cfg := QuestionConfig{
+	//	ConfigType:            ConfigTypeQuestion,
+	//	QuestionTemplateDocId: qaTemplateDocId,
+	//	StartDate:             Date{now},
+	//	EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
+	//	DurationMinutes:       90,                                // 60 mins
+	//}
+	//err = SaveConfig(svcSheets, configDocId, cfg)
+	//handleError(err, "failed to save config")
+
+	cfg, err := LoadConfig(svcSheets, configDocId)
 	handleError(err, "failed to save config")
+	printJSON(cfg)
 }
 
 func main_() {
@@ -374,6 +378,31 @@ func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg QuestionConfi
 		&cfg,
 	}
 	return gocsv.MarshalCSV(data, w)
+}
+
+func LoadConfig(srvSheets *sheets.Service, configDocId string) (*QuestionConfig, error) {
+	r, err := gdrive.NewRowReader(srvSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
+		Header: "Config Type",
+		By: func(column []interface{}) (int, error) {
+			for i, v := range column {
+				if v.(string) == string(ConfigTypeQuestion) {
+					return i, nil
+				}
+			}
+			return -1, io.EOF
+		},
+	})
+	if err == io.EOF {
+		return nil, errors.New("Question Config not found!")
+	} else if err != nil {
+		return nil, err
+	}
+
+	configs := []*QuestionConfig{}
+	if err := gocsv.UnmarshalCSV(r, &configs); err != nil { // Load clients from file
+		return nil, err
+	}
+	return configs[0], nil
 }
 
 /*
