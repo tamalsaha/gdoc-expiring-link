@@ -37,21 +37,21 @@ func main() {
 	handleError(err, "Error creating Sheets client")
 
 	configDocId := "1KB_Efi9jQcJ0_tCRF4fSLc6TR7QxaBKg05cKXAwbC9E"
-	qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
-	now := time.Now()
-	cfg := QuestionConfig{
-		ConfigType:            ConfigTypeQuestion,
-		QuestionTemplateDocId: qaTemplateDocId,
-		StartDate:             Date{now},
-		EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
-		Duration:              Duration{90 * time.Minute},        // 60 mins
-	}
-	err = SaveConfig(svcSheets, configDocId, cfg)
-	handleError(err, "failed to save config")
+	//qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
+	//now := time.Now()
+	//cfg := QuestionConfig{
+	//	ConfigType:            ConfigTypeQuestion,
+	//	QuestionTemplateDocId: qaTemplateDocId,
+	//	StartDate:             Date{now},
+	//	EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
+	//	Duration:              Duration{90 * time.Minute},        // 60 mins
+	//}
+	//err = SaveConfig(svcSheets, configDocId, cfg)
+	//handleError(err, "failed to save config")
 
-	// cfg, err := LoadConfig(svcSheets, configDocId)
-	// handleError(err, "failed to save config")
-	// printJSON(cfg)
+	cfg, err := LoadConfig(svcSheets, configDocId)
+	handleError(err, "failed to save config")
+	printJSON(cfg)
 }
 
 func main_() {
@@ -258,14 +258,35 @@ type Duration struct {
 }
 
 // Convert the internal date as CSV string
-func (date *Duration) MarshalCSV() (string, error) {
-	return date.Duration.String(), nil
+func (d *Duration) MarshalCSV() (string, error) {
+	return d.Duration.String(), nil
 }
 
 // Convert the CSV string as internal date
-func (date *Duration) UnmarshalCSV(csv string) (err error) {
-	date.Duration, err = time.ParseDuration(csv)
+func (d *Duration) UnmarshalCSV(csv string) (err error) {
+	d.Duration, err = time.ParseDuration(csv)
 	return err
+}
+
+// UnmarshalJSON implements the json.Unmarshaller interface.
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var str string
+	err := json.Unmarshal(b, &str)
+	if err != nil {
+		return err
+	}
+
+	pd, err := time.ParseDuration(str)
+	if err != nil {
+		return err
+	}
+	d.Duration = pd
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.Duration.String())
 }
 
 type NewsSnippet struct {
