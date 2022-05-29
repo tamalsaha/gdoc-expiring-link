@@ -11,6 +11,7 @@ import (
 
 	"github.com/gocarina/gocsv"
 	"github.com/pkg/errors"
+	csvtypes "gomodules.xyz/encoding/csv/types"
 	_ "gomodules.xyz/gdrive-utils"
 	gdrive "gomodules.xyz/gdrive-utils"
 	"google.golang.org/api/docs/v1"
@@ -45,7 +46,7 @@ func main() {
 
 	configDocId := "1KB_Efi9jQcJ0_tCRF4fSLc6TR7QxaBKg05cKXAwbC9E"
 	//qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
-	//now := time.Now().UTC()
+	//now := time.Now()
 	//cfg := QuestionConfig{
 	//	ConfigType:            ConfigTypeQuestion,
 	//	QuestionTemplateDocId: qaTemplateDocId,
@@ -82,7 +83,7 @@ func main_() {
 	handleError(err, "Error finding parent folder id")
 	fmt.Println("parent folder id", folderId)
 
-	now := time.Now().UTC()
+	now := time.Now()
 	docId, err := gdrive.CopyDoc(svcDrive, svcDocs, fileId, folderId, "Account Interview", map[string]string{
 		"{{email}}":      email,
 		"{{start-time}}": now.Format(time.RFC3339),
@@ -126,77 +127,6 @@ func printJSON(v interface{}) {
 	fmt.Println(string(data))
 }
 
-const (
-	TimestampFormat = "1/2/2006 15:04:05"
-	DateFormat      = "1/2/2006"
-)
-
-type Timestamp struct {
-	time.Time
-}
-
-// Convert the internal date as CSV string
-func (date *Timestamp) MarshalCSV() (string, error) {
-	return date.Time.Format(TimestampFormat), nil
-}
-
-// Convert the CSV string as internal date
-func (date *Timestamp) UnmarshalCSV(csv string) (err error) {
-	date.Time, err = time.Parse(TimestampFormat, csv)
-	return err
-}
-
-type Date struct {
-	time.Time
-}
-
-// Convert the internal date as CSV string
-func (date *Date) MarshalCSV() (string, error) {
-	return date.Time.Format(DateFormat), nil
-}
-
-// Convert the CSV string as internal date
-func (date *Date) UnmarshalCSV(csv string) (err error) {
-	date.Time, err = time.Parse(DateFormat, csv)
-	return err
-}
-
-type Duration struct {
-	time.Duration
-}
-
-// Convert the internal date as CSV string
-func (d *Duration) MarshalCSV() (string, error) {
-	return d.Duration.String(), nil
-}
-
-// Convert the CSV string as internal date
-func (d *Duration) UnmarshalCSV(csv string) (err error) {
-	d.Duration, err = time.ParseDuration(csv)
-	return err
-}
-
-// UnmarshalJSON implements the json.Unmarshaller interface.
-func (d *Duration) UnmarshalJSON(b []byte) error {
-	var str string
-	err := json.Unmarshal(b, &str)
-	if err != nil {
-		return err
-	}
-
-	pd, err := time.ParseDuration(str)
-	if err != nil {
-		return err
-	}
-	d.Duration = pd
-	return nil
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-func (d Duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.Duration.String())
-}
-
 type ConfigType string
 
 const (
@@ -204,11 +134,11 @@ const (
 )
 
 type QuestionConfig struct {
-	ConfigType            ConfigType `json:"configType" csv:"Config Type"`
-	QuestionTemplateDocId string     `json:"questionTemplateDocId" csv:"Question Template Doc Id"`
-	StartDate             Date       `json:"startDate" csv:"Start Date"`
-	EndDate               Date       `json:"endDate" csv:"End Date"`
-	Duration              Duration   `json:"duration"  csv:"Duration"`
+	ConfigType            ConfigType        `json:"configType" csv:"Config Type"`
+	QuestionTemplateDocId string            `json:"questionTemplateDocId" csv:"Question Template Doc Id"`
+	StartDate             csvtypes.Date     `json:"startDate" csv:"Start Date"`
+	EndDate               csvtypes.Date     `json:"endDate" csv:"End Date"`
+	Duration              csvtypes.Duration `json:"duration"  csv:"Duration"`
 }
 
 const (
@@ -261,10 +191,10 @@ func LoadConfig(svcSheets *sheets.Service, configDocId string) (*QuestionConfig,
 }
 
 type TestAnswer struct {
-	Email     string    `json:"email" csv:"Email"`
-	DocId     string    `json:"docId"  csv:"Doc Id"`
-	StartDate Timestamp `json:"startDate" csv:"Start Date"`
-	EndDate   Timestamp `json:"endDate" csv:"End Date"`
+	Email     string             `json:"email" csv:"Email"`
+	DocId     string             `json:"docId"  csv:"Doc Id"`
+	StartDate csvtypes.Timestamp `json:"startDate" csv:"Start Date"`
+	EndDate   csvtypes.Timestamp `json:"endDate" csv:"End Date"`
 }
 
 func SaveTestAnswer(svcSheets *sheets.Service, configDocId string, ans TestAnswer) error {
@@ -328,7 +258,7 @@ func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, svcSheets *sheets.
 	// started and x min left to finish the test, redirect, embed
 	// did not start, copy file, stat clock
 
-	now := time.Now().UTC()
+	now := time.Now()
 
 	cfg, err := LoadConfig(svcSheets, configDocId)
 	if err != nil {
@@ -350,8 +280,8 @@ func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, svcSheets *sheets.
 		ans = &TestAnswer{
 			Email:     email,
 			DocId:     "",
-			StartDate: Timestamp{now},
-			EndDate:   Timestamp{now.Add(cfg.Duration.Duration)},
+			StartDate: csvtypes.Timestamp{now},
+			EndDate:   csvtypes.Timestamp{now.Add(cfg.Duration.Duration)},
 		}
 
 		folderId, err := gdrive.GetFolderId(svcDrive, configDocId, path.Join("candidates", email))
