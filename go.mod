@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/flower-corp/lotusdb v1.0.0
 	github.com/gocarina/gocsv v0.0.0-20220520193141-bb9bebb918c3
+	github.com/madflojo/tasks v1.0.3
 	github.com/pkg/errors v0.9.1
 	gomodules.xyz/encoding v0.0.5
 	gomodules.xyz/gdrive-utils v0.0.6
@@ -16,6 +17,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
+	github.com/rs/xid v1.3.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect

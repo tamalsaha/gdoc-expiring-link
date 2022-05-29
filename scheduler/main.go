@@ -1,66 +1,47 @@
 package main
 
 import (
-	"github.com/flower-corp/lotusdb"
-	"io/ioutil"
+	"fmt"
+	"log"
 	"time"
+
+	"github.com/madflojo/tasks"
 )
 
-// basic operations for LotusDB:
-// put
-// put with options
-// get
-// delete
-// delete with options
+// https://github.com/madflojo/tasks/blob/main/tasks_test.go
 func main() {
-	path, _ := ioutil.TempDir("", "lotusdb")
-	opts := lotusdb.DefaultOptions(path)
-	db, err := lotusdb.Open(opts)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
+	// Start the Scheduler
+	scheduler := tasks.New()
+	defer scheduler.Stop()
 
-	// 1.----put----
-	key1 := []byte("name")
-	err = db.Put(key1, []byte("lotusdb"))
+	// Add a one time only task for 60 seconds from now
+	id, err := scheduler.Add(&tasks.Task{
+		Interval: 15 * time.Second,
+		RunOnce:  true,
+		TaskFunc: func() error {
+			fmt.Println(">>>>")
+			return nil
+		},
+		ErrFunc: func(e error) {
+			log.Printf("An error occurred when executing task %v", e)
+		},
+	})
 	if err != nil {
-		// ...
+		// Do Stuff
 	}
+	fmt.Println(id)
 
-	key2 := []byte("feature")
-	// 2.----put with options----
-	writeOpts := &lotusdb.WriteOptions{
-		Sync:      true,
-		ExpiredAt: time.Now().Add(time.Second * 100).Unix(),
-	}
-	err = db.PutWithOptions(key2, []byte("store data"), writeOpts)
-	if err != nil {
-		// ...
-	}
+	// select {}
+	time.Sleep(1 * time.Hour)
 
-	// 3.----get----
-	val, err := db.Get(key1)
-	if err != nil {
-		// ...
-	}
-	if len(val) > 0 {
-		// ...
-	}
-
-	// 4.----delete----
-	err = db.Delete(key1)
-	if err != nil {
-		// ...
-	}
-
-	// 5.----delete with options----
-	deleteOpts := &lotusdb.WriteOptions{
-		Sync:       false,
-		DisableWal: true,
-	}
-	err = db.DeleteWithOptions([]byte("dummy key"), deleteOpts)
-	if err != nil {
-		// ...
-	}
+	//// Add a task
+	//id, err := scheduler.Add(&tasks.Task{
+	//	Interval: time.Duration(30 * time.Second),
+	//	TaskFunc: func() error {
+	//		// Put your logic here
+	//	}(),
+	//})
+	//if err != nil {
+	//	// Do Stuff
+	//}
 }
