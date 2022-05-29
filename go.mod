@@ -3,9 +3,9 @@ module github.com/tamalsaha/gdoc-expiring-link
 go 1.18
 
 require (
-	github.com/gocarina/gocsv v0.0.0-20211020200912-82fc2684cc48
+	github.com/gocarina/gocsv v0.0.0-20220520193141-bb9bebb918c3
 	github.com/pkg/errors v0.9.1
-	gomodules.xyz/gdrive-utils v0.0.4
+	gomodules.xyz/gdrive-utils v0.0.5
 	google.golang.org/api v0.81.0
 )
 

@@ -1,7 +1,7 @@
 # cloud.google.com/go/compute v1.6.1
 ## explicit; go 1.15
 cloud.google.com/go/compute/metadata
-# github.com/gocarina/gocsv v0.0.0-20211020200912-82fc2684cc48
+# github.com/gocarina/gocsv v0.0.0-20220520193141-bb9bebb918c3
 ## explicit; go 1.13
 github.com/gocarina/gocsv
 # github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
@@ -71,7 +71,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# gomodules.xyz/gdrive-utils v0.0.4
+# gomodules.xyz/gdrive-utils v0.0.5
 ## explicit; go 1.17
 gomodules.xyz/gdrive-utils
 # google.golang.org/api v0.81.0

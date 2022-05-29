@@ -46,7 +46,7 @@ func main() {
 
 	configDocId := "1KB_Efi9jQcJ0_tCRF4fSLc6TR7QxaBKg05cKXAwbC9E"
 	//qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
-	//now := time.Now()
+	//now := time.Now().UTC()
 	//cfg := QuestionConfig{
 	//	ConfigType:            ConfigTypeQuestion,
 	//	QuestionTemplateDocId: qaTemplateDocId,
@@ -83,10 +83,11 @@ func main_() {
 	handleError(err, "Error finding parent folder id")
 	fmt.Println("parent folder id", folderId)
 
+	now := time.Now().UTC()
 	docId, err := CopyDoc(svcDrive, svcDocs, fileId, folderId, "Account Interview", map[string]string{
 		"{{email}}":      email,
-		"{{start-time}}": time.Now().Format(time.RFC3339),
-		"{{end-time}}":   time.Now().Add(1 * time.Hour).Format(time.RFC3339),
+		"{{start-time}}": now.Format(time.RFC3339),
+		"{{end-time}}":   now.Add(1 * time.Hour).Format(time.RFC3339),
 	})
 	fmt.Println("user file id", docId)
 
@@ -467,7 +468,7 @@ func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, svcSheets *sheets.
 	// started and x min left to finish the test, redirect, embed
 	// did not start, copy file, stat clock
 
-	now := time.Now()
+	now := time.Now().UTC()
 
 	cfg, err := LoadConfig(svcSheets, configDocId)
 	if err != nil {
