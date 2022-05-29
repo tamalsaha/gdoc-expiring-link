@@ -47,8 +47,8 @@ func main() {
 		ConfigType:            ConfigTypeQuestion,
 		QuestionTemplateDocId: qaTemplateDocId,
 		StartDate:             Date{now},
-		EndDate:               Date{now.Add(3 * 24 * time.Hour)}, // 3 days
-		DurationMinutes:       60,                                // 60 mins
+		EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
+		DurationMinutes:       90,                                // 60 mins
 	}
 	err = SaveConfig(svcSheets, configDocId, cfg)
 	handleError(err, "failed to save config")
@@ -357,7 +357,7 @@ const (
 	ProjectConfigSheet = "config"
 )
 
-func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg IConfigType) error {
+func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg QuestionConfig) error {
 	w := gdrive.NewRowWriter(srvSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
 		Header: "Config Type",
 		By: func(column []interface{}) (int, error) {
@@ -370,12 +370,13 @@ func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg IConfigType) 
 		},
 	})
 
-	data := []IConfigType{
-		cfg,
+	data := []*QuestionConfig{
+		&cfg,
 	}
 	return gocsv.MarshalCSV(data, w)
 }
 
+/*
 func GetPage(srvSheets *sheets.Service, configDocId string) {
 	now := time.Now()
 
@@ -419,3 +420,4 @@ func GetPage(srvSheets *sheets.Service, configDocId string) {
 	}
 	return &NewsSnippet{}, nil
 }
+*/
