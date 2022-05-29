@@ -36,6 +36,14 @@ func main() {
 	svcSheets, err := sheets.NewService(context.TODO(), option.WithHTTPClient(client))
 	handleError(err, "Error creating Sheets client")
 
+	svcDrive, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
+	handleError(err, "Error creating Drive client")
+
+	svcDocs, err := docs.NewService(context.TODO(), option.WithHTTPClient(client))
+	handleError(err, "Error creating Docs client")
+
+	email := "tamal.saha@gmail.com"
+
 	configDocId := "1KB_Efi9jQcJ0_tCRF4fSLc6TR7QxaBKg05cKXAwbC9E"
 	//qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
 	//now := time.Now()
@@ -49,9 +57,11 @@ func main() {
 	//err = SaveConfig(svcSheets, configDocId, cfg)
 	//handleError(err, "failed to save config")
 
-	cfg, err := LoadConfig(svcSheets, configDocId)
-	handleError(err, "failed to save config")
-	printJSON(cfg)
+	// cfg, err := LoadConfig(svcSheets, configDocId)
+	// handleError(err, "failed to save config")
+	// printJSON(cfg)
+
+	PostPage(svcDrive, svcDocs, svcSheets, configDocId, email)
 }
 
 func main_() {
@@ -345,8 +355,8 @@ const (
 	ProjectTestSheet   = "test"
 )
 
-func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg QuestionConfig) error {
-	w := gdrive.NewRowWriter(srvSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
+func SaveConfig(svcSheets *sheets.Service, configDocId string, cfg QuestionConfig) error {
+	w := gdrive.NewRowWriter(svcSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
 		Header: "Config Type",
 		By: func(column []interface{}) (int, error) {
 			for i, v := range column {
@@ -364,8 +374,8 @@ func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg QuestionConfi
 	return gocsv.MarshalCSV(data, w)
 }
 
-func LoadConfig(srvSheets *sheets.Service, configDocId string) (*QuestionConfig, error) {
-	r, err := gdrive.NewRowReader(srvSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
+func LoadConfig(svcSheets *sheets.Service, configDocId string) (*QuestionConfig, error) {
+	r, err := gdrive.NewRowReader(svcSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
 		Header: "Config Type",
 		By: func(column []interface{}) (int, error) {
 			for i, v := range column {
@@ -396,8 +406,8 @@ type TestAnswer struct {
 	EndDate   Timestamp `json:"endDate" csv:"End Date"`
 }
 
-func SaveTestAnswer(srvSheets *sheets.Service, configDocId string, ans TestAnswer) error {
-	w := gdrive.NewRowWriter(srvSheets, configDocId, ProjectTestSheet, &gdrive.Predicate{
+func SaveTestAnswer(svcSheets *sheets.Service, configDocId string, ans TestAnswer) error {
+	w := gdrive.NewRowWriter(svcSheets, configDocId, ProjectTestSheet, &gdrive.Predicate{
 		Header: "Email",
 		By: func(column []interface{}) (int, error) {
 			for i, v := range column {
@@ -415,8 +425,8 @@ func SaveTestAnswer(srvSheets *sheets.Service, configDocId string, ans TestAnswe
 	return gocsv.MarshalCSV(data, w)
 }
 
-func LoadTestAnswer(srvSheets *sheets.Service, configDocId, email string) (*TestAnswer, error) {
-	r, err := gdrive.NewRowReader(srvSheets, configDocId, ProjectTestSheet, &gdrive.Predicate{
+func LoadTestAnswer(svcSheets *sheets.Service, configDocId, email string) (*TestAnswer, error) {
+	r, err := gdrive.NewRowReader(svcSheets, configDocId, ProjectTestSheet, &gdrive.Predicate{
 		Header: "Email",
 		By: func(column []interface{}) (int, error) {
 			for i, v := range column {
@@ -441,8 +451,8 @@ func LoadTestAnswer(srvSheets *sheets.Service, configDocId, email string) (*Test
 	return answers[0], nil
 }
 
-func GetTestPage(srvSheets *sheets.Service, configDocId string) {
-	cfg, err := LoadConfig(srvSheets, configDocId)
+func GetTestPage(svcSheets *sheets.Service, configDocId string) {
+	cfg, err := LoadConfig(svcSheets, configDocId)
 	if err != nil {
 		panic(err)
 	}
@@ -452,14 +462,14 @@ func GetTestPage(srvSheets *sheets.Service, configDocId string) {
 	fmt.Printf("%s left to take the test!", time.Until(cfg.EndDate.Time))
 }
 
-func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, srvSheets *sheets.Service, configDocId, email string) {
+func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, svcSheets *sheets.Service, configDocId, email string) {
 	// already submitted
 	// started and x min left to finish the test, redirect, embed
 	// did not start, copy file, stat clock
 
 	now := time.Now()
 
-	cfg, err := LoadConfig(srvSheets, configDocId)
+	cfg, err := LoadConfig(svcSheets, configDocId)
 	if err != nil {
 		panic(err)
 	}
@@ -467,7 +477,7 @@ func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, srvSheets *sheets.
 	if now.After(cfg.EndDate.Time) {
 		panic("Time passed for this test")
 	}
-	ans, err := LoadTestAnswer(srvSheets, configDocId, email)
+	ans, err := LoadTestAnswer(svcSheets, configDocId, email)
 	if err != nil && err != io.EOF {
 		panic(err) // some error
 	}
@@ -499,7 +509,7 @@ func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, srvSheets *sheets.
 		}
 		ans.DocId = docId
 
-		err = SaveTestAnswer(srvSheets, configDocId, *ans)
+		err = SaveTestAnswer(svcSheets, configDocId, *ans)
 		if err != nil {
 			panic(err)
 		}
