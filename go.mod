@@ -3,14 +3,14 @@ module github.com/tamalsaha/gdoc-expiring-link
 go 1.18
 
 require (
+	github.com/gocarina/gocsv v0.0.0-20211020200912-82fc2684cc48
 	github.com/pkg/errors v0.9.1
-	gomodules.xyz/gdrive-utils v0.0.3
+	gomodules.xyz/gdrive-utils v0.0.4
 	google.golang.org/api v0.81.0
 )
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
-	github.com/gocarina/gocsv v0.0.0-20211020200912-82fc2684cc48 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect

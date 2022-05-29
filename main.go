@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"path"
-	"sort"
 	"strings"
 	"time"
 
@@ -41,21 +40,21 @@ func main() {
 	handleError(err, "Error creating Sheets client")
 
 	configDocId := "1KB_Efi9jQcJ0_tCRF4fSLc6TR7QxaBKg05cKXAwbC9E"
-	//qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
-	//now := time.Now()
-	//cfg := QuestionConfig{
-	//	ConfigType:            ConfigTypeQuestion,
-	//	QuestionTemplateDocId: qaTemplateDocId,
-	//	StartDate:             Date{now},
-	//	EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
-	//	DurationMinutes:       90,                                // 60 mins
-	//}
-	//err = SaveConfig(svcSheets, configDocId, cfg)
-	//handleError(err, "failed to save config")
-
-	cfg, err := LoadConfig(svcSheets, configDocId)
+	qaTemplateDocId := "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
+	now := time.Now()
+	cfg := QuestionConfig{
+		ConfigType:            ConfigTypeQuestion,
+		QuestionTemplateDocId: qaTemplateDocId,
+		StartDate:             Date{now},
+		EndDate:               Date{now.Add(5 * 24 * time.Hour)}, // 3 days
+		Duration:              Duration{90 * time.Minute},        // 60 mins
+	}
+	err = SaveConfig(svcSheets, configDocId, cfg)
 	handleError(err, "failed to save config")
-	printJSON(cfg)
+
+	//cfg, err := LoadConfig(svcSheets, configDocId)
+	//handleError(err, "failed to save config")
+	//printJSON(cfg)
 }
 
 func main_() {
@@ -257,6 +256,21 @@ func (date *Date) UnmarshalCSV(csv string) (err error) {
 	return err
 }
 
+type Duration struct {
+	time.Duration
+}
+
+// Convert the internal date as CSV string
+func (date *Duration) MarshalCSV() (string, error) {
+	return date.Duration.String(), nil
+}
+
+// Convert the CSV string as internal date
+func (date *Duration) UnmarshalCSV(csv string) (err error) {
+	date.Duration, err = time.ParseDuration(csv)
+	return err
+}
+
 type NewsSnippet struct {
 	Content   string `json:"content" csv:"Content"`
 	StartDate Date   `json:"startDate" csv:"Start Date"`
@@ -282,55 +296,6 @@ type NewsSnippet struct {
 //	})
 //}
 
-const (
-	NewsSnippetSpreadsheetId = ""
-	NewsSnippetSheet         = ""
-)
-
-func NextNewsSnippet(srvSheets *sheets.Service) (*NewsSnippet, error) {
-	now := time.Now()
-
-	reader, err := gdrive.NewRowReader(srvSheets, NewsSnippetSpreadsheetId, NewsSnippetSheet, &gdrive.Predicate{
-		Header: "End Date",
-		By: func(column []interface{}) (int, error) {
-			for i, v := range column {
-				var d Date
-				err := d.UnmarshalCSV(v.(string))
-				if err != nil {
-					return -1, err
-				}
-				if d.Time.After(now) {
-					return i, nil
-				}
-			}
-			return -1, io.EOF
-		},
-	})
-	if err == io.EOF {
-		return &NewsSnippet{}, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	snippets := []*NewsSnippet{}
-	if err := gocsv.UnmarshalCSV(reader, &snippets); err != nil { // Load clients from file
-		return nil, err
-	}
-	sort.Slice(snippets, func(i, j int) bool {
-		return snippets[i].EndDate.Before(snippets[j].EndDate.Time)
-	})
-	for i, s := range snippets {
-		if s.EndDate.After(now) {
-			snippets = snippets[i:]
-			break
-		}
-	}
-	if now.After(snippets[0].StartDate.Time) {
-		return snippets[0], nil
-	}
-	return &NewsSnippet{}, nil
-}
-
 // GET Page
 
 type ConfigType string
@@ -348,7 +313,7 @@ type QuestionConfig struct {
 	QuestionTemplateDocId string     `json:"questionTemplateDocId" csv:"Question Template Doc Id"`
 	StartDate             Date       `json:"startDate" csv:"Start Date"`
 	EndDate               Date       `json:"endDate" csv:"End Date"`
-	DurationMinutes       int        `json:"durationMinutes"  csv:"Duration Minutes"`
+	Duration              Duration   `json:"duration"  csv:"Duration"`
 }
 
 var _ IConfigType = QuestionConfig{}
@@ -359,6 +324,7 @@ func (q QuestionConfig) Type() ConfigType {
 
 const (
 	ProjectConfigSheet = "config"
+	ProjectTestSheet   = "test"
 )
 
 func SaveConfig(srvSheets *sheets.Service, configDocId string, cfg QuestionConfig) error {
@@ -405,48 +371,122 @@ func LoadConfig(srvSheets *sheets.Service, configDocId string) (*QuestionConfig,
 	return configs[0], nil
 }
 
-/*
-func GetPage(srvSheets *sheets.Service, configDocId string) {
-	now := time.Now()
+type TestAnswer struct {
+	Email     string    `json:"email" csv:"Email"`
+	DocId     string    `json:"docId"  csv:"Doc Id"`
+	StartDate Timestamp `json:"startDate" csv:"Start Date"`
+	EndDate   Timestamp `json:"endDate" csv:"End Date"`
+}
 
-	reader, err := gdrive.NewRowReader(srvSheets, configDocId, ProjectConfigSheet, &gdrive.Predicate{
-		Header: "Config Type",
+func SaveTestAnswer(srvSheets *sheets.Service, configDocId string, ans TestAnswer) error {
+	w := gdrive.NewRowWriter(srvSheets, configDocId, ProjectTestSheet, &gdrive.Predicate{
+		Header: "Email",
 		By: func(column []interface{}) (int, error) {
 			for i, v := range column {
-				var d Date
-				err := d.UnmarshalCSV(v.(string))
-				if err != nil {
-					return -1, err
-				}
-				if d.Time.After(now) {
+				if v.(string) == ans.Email {
 					return i, nil
 				}
 			}
 			return -1, io.EOF
 		},
 	})
-	if err == io.EOF {
-		return &NewsSnippet{}, nil
-	} else if err != nil {
+
+	data := []*TestAnswer{
+		&ans,
+	}
+	return gocsv.MarshalCSV(data, w)
+}
+
+func LoadTestAnswer(srvSheets *sheets.Service, configDocId, email string) (*TestAnswer, error) {
+	r, err := gdrive.NewRowReader(srvSheets, configDocId, ProjectTestSheet, &gdrive.Predicate{
+		Header: "Email",
+		By: func(column []interface{}) (int, error) {
+			for i, v := range column {
+				if v.(string) == email {
+					return i, nil
+				}
+			}
+			return -1, io.EOF
+		},
+	})
+	//if err == io.EOF {
+	//	return nil, errors.Errorf("%s has not started the test yet!", email)
+	//} else
+	if err != nil {
 		return nil, err
 	}
 
-	snippets := []*NewsSnippet{}
-	if err := gocsv.UnmarshalCSV(reader, &snippets); err != nil { // Load clients from file
+	answers := []*TestAnswer{}
+	if err := gocsv.UnmarshalCSV(r, &answers); err != nil {
 		return nil, err
 	}
-	sort.Slice(snippets, func(i, j int) bool {
-		return snippets[i].EndDate.Before(snippets[j].EndDate.Time)
-	})
-	for i, s := range snippets {
-		if s.EndDate.After(now) {
-			snippets = snippets[i:]
-			break
+	return answers[0], nil
+}
+
+func GetTestPage(srvSheets *sheets.Service, configDocId string) {
+	cfg, err := LoadConfig(srvSheets, configDocId)
+	if err != nil {
+		panic(err)
+	}
+	if time.Now().After(cfg.EndDate.Time) {
+		panic("Time passed for this test")
+	}
+	fmt.Printf("%s left to take the test!", time.Until(cfg.EndDate.Time))
+}
+
+func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, srvSheets *sheets.Service, configDocId, email string) {
+	// already submitted
+	// started and x min left to finish the test, redirect, embed
+	// did not start, copy file, stat clock
+
+	now := time.Now()
+
+	cfg, err := LoadConfig(srvSheets, configDocId)
+	if err != nil {
+		panic(err)
+	}
+
+	if now.After(cfg.EndDate.Time) {
+		panic("Time passed for this test")
+	}
+	ans, err := LoadTestAnswer(srvSheets, configDocId, email)
+	if err != nil && err != io.EOF {
+		panic(err) // some error
+	}
+	if err == nil {
+		if now.After(ans.EndDate.Time) {
+			panic(fmt.Sprintf("%s passed after test has ended!", time.Since(ans.EndDate.Time)))
+		}
+	} else {
+		ans = &TestAnswer{
+			Email:     email,
+			DocId:     "",
+			StartDate: Timestamp{now},
+			EndDate:   Timestamp{now.Add(cfg.Duration.Duration)},
+		}
+
+		folderId, err := gdrive.GetFolderId(svcDrive, configDocId, path.Join("candidates", email))
+		if err != nil {
+			panic(err)
+		}
+		docName := fmt.Sprintf("%s - Test %s", email, ans.StartDate.Format("2006-01-02"))
+		docId, err := gdrive.CopyDoc(
+			svcDrive, svcDocs, cfg.QuestionTemplateDocId, folderId, docName, map[string]string{
+				"{{email}}":      email,
+				"{{start-time}}": ans.StartDate.Format(time.RFC3339),
+				"{{end-time}}":   ans.EndDate.Format(time.RFC3339),
+			})
+		if err != nil {
+			panic(err)
+		}
+		ans.DocId = docId
+
+		err = SaveTestAnswer(srvSheets, configDocId, *ans)
+		if err != nil {
+			panic(err)
 		}
 	}
-	if now.After(snippets[0].StartDate.Time) {
-		return snippets[0], nil
-	}
-	return &NewsSnippet{}, nil
+
+	fmt.Printf("%s left to take the test!\n", time.Until(ans.EndDate.Time))
+	fmt.Printf("https://docs.google.com/document/d/%s/edit", ans.DocId)
 }
-*/
