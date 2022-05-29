@@ -307,5 +307,5 @@ func PostPage(svcDrive *drive.Service, svcDocs *docs.Service, svcSheets *sheets.
 	}
 
 	fmt.Printf("%s left to take the test!\n", time.Until(ans.EndDate.Time))
-	fmt.Printf("https://docs.google.com/document/d/%s/edit", ans.DocId)
+	fmt.Printf("https://docs.google.com/document/d/%s/edit\n", ans.DocId)
 }
