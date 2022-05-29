@@ -93,7 +93,7 @@ func main_() {
 
 	// AddPermission(svcDrive, docId, email, "writer")
 
-	err = RevokePermission(svcDrive, docId, email)
+	err = gdrive.RevokePermission(svcDrive, docId, email)
 	handleError(err, "RevokePermission")
 }
 
