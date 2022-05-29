@@ -1,5 +1,3 @@
-// Sample Go code for user authorization
-
 package main
 
 import (
@@ -13,14 +11,13 @@ import (
 	"time"
 
 	"github.com/gocarina/gocsv"
-	"google.golang.org/api/sheets/v4"
-
 	"github.com/pkg/errors"
 	_ "gomodules.xyz/gdrive-utils"
 	gdrive "gomodules.xyz/gdrive-utils"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+	"google.golang.org/api/sheets/v4"
 )
 
 func handleError(err error, message string) {
@@ -52,9 +49,9 @@ func main() {
 	err = SaveConfig(svcSheets, configDocId, cfg)
 	handleError(err, "failed to save config")
 
-	//cfg, err := LoadConfig(svcSheets, configDocId)
-	//handleError(err, "failed to save config")
-	//printJSON(cfg)
+	// cfg, err := LoadConfig(svcSheets, configDocId)
+	// handleError(err, "failed to save config")
+	// printJSON(cfg)
 }
 
 func main_() {
