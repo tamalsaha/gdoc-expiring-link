@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/gocarina/gocsv v0.0.0-20220520193141-bb9bebb918c3
 	github.com/pkg/errors v0.9.1
-	gomodules.xyz/gdrive-utils v0.0.6-0.20220529164131-8e4d1ce4a85f
+	gomodules.xyz/gdrive-utils v0.0.6
 	google.golang.org/api v0.81.0
 )
 
