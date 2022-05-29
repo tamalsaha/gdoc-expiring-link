@@ -1,6 +1,17 @@
 # cloud.google.com/go/compute v1.6.1
 ## explicit; go 1.15
 cloud.google.com/go/compute/metadata
+# github.com/flower-corp/lotusdb v1.0.0
+## explicit; go 1.16
+github.com/flower-corp/lotusdb
+github.com/flower-corp/lotusdb/arenaskl
+github.com/flower-corp/lotusdb/flock
+github.com/flower-corp/lotusdb/index
+github.com/flower-corp/lotusdb/ioselector
+github.com/flower-corp/lotusdb/logfile
+github.com/flower-corp/lotusdb/logger
+github.com/flower-corp/lotusdb/mmap
+github.com/flower-corp/lotusdb/util
 # github.com/gocarina/gocsv v0.0.0-20220520193141-bb9bebb918c3
 ## explicit; go 1.13
 github.com/gocarina/gocsv
@@ -24,6 +35,9 @@ github.com/googleapis/gax-go/v2/internal
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# go.etcd.io/bbolt v1.3.6
+## explicit; go 1.12
+go.etcd.io/bbolt
 # go.opencensus.io v0.23.0
 ## explicit; go 1.13
 go.opencensus.io

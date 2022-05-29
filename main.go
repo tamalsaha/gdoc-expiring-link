@@ -29,7 +29,13 @@ func handleError(err error, message string) {
 	}
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
 func main() {
+	now := time.Now().UTC()
+	fmt.Println(now.Format(time.RFC3339))
+}
+
+func main__() {
 	client, err := gdrive.DefaultClient(".")
 	handleError(err, "Error creating YouTube client")
 
