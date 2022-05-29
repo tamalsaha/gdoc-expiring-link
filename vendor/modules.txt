@@ -71,7 +71,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# gomodules.xyz/gdrive-utils v0.0.5
+# gomodules.xyz/gdrive-utils v0.0.6-0.20220529164131-8e4d1ce4a85f
 ## explicit; go 1.17
 gomodules.xyz/gdrive-utils
 # google.golang.org/api v0.81.0
