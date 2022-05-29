@@ -99,29 +99,6 @@ func main_() {
 
 const fileId = "16Ff6Lum3F6IeyAEy3P5Xy7R8CITIZRjdwnsRwBg9rD4"
 
-// https://developers.google.com/youtube/v3/getting-started#partial
-// parts vs fields
-// parts is top level section
-// fields are fields inside that section
-
-func RevokePermission(svc *drive.Service, docId string, email string) error {
-	call := svc.Permissions.List(docId)
-	call = call.Fields("permissions(id,role,type,emailAddress)")
-	var perms []*drive.Permission
-	err := call.Pages(context.TODO(), func(resp *drive.PermissionList) error {
-		perms = append(perms, resp.Permissions...)
-		return nil
-	})
-	printJSON(perms)
-
-	for _, perm := range perms {
-		if perm.EmailAddress == email {
-			return svc.Permissions.Delete(docId, perm.Id).Do()
-		}
-	}
-	return err
-}
-
 func printJSON(v interface{}) {
 	data, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(data))
