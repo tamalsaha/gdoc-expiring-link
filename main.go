@@ -178,7 +178,6 @@ type TestAnswer struct {
 	DocId     string             `json:"docId"  csv:"Doc Id"`
 	StartDate csvtypes.Timestamp `json:"startDate" csv:"Start Date"`
 	EndDate   csvtypes.Timestamp `json:"endDate" csv:"End Date"`
-	Revoked   bool               `json:"revoked"  csv:"Revoked"`
 }
 
 func SaveTestAnswer(svcSheets *sheets.Service, configDocId string, ans TestAnswer) error {

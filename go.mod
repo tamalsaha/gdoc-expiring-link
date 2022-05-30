@@ -9,7 +9,7 @@ require (
 	github.com/rs/xid v1.3.0
 	github.com/syndtr/goleveldb v1.0.0
 	gomodules.xyz/encoding v0.0.5
-	gomodules.xyz/gdrive-utils v0.0.7
+	gomodules.xyz/gdrive-utils v0.0.8
 	google.golang.org/api v0.81.0
 )
 
