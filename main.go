@@ -30,12 +30,12 @@ func handleError(err error, message string) {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
-func main() {
-	now := time.Now().UTC()
-	fmt.Println(now.Format(time.RFC3339))
-}
+//func main() {
+//	now := time.Now().UTC()
+//	fmt.Println(now.Format(time.RFC3339))
+//}
 
-func main__() {
+func main() {
 	client, err := gdrive.DefaultClient(".")
 	handleError(err, "Error creating YouTube client")
 
@@ -178,6 +178,7 @@ type TestAnswer struct {
 	DocId     string             `json:"docId"  csv:"Doc Id"`
 	StartDate csvtypes.Timestamp `json:"startDate" csv:"Start Date"`
 	EndDate   csvtypes.Timestamp `json:"endDate" csv:"End Date"`
+	Revoked   bool               `json:"revoked"  csv:"Revoked"`
 }
 
 func SaveTestAnswer(svcSheets *sheets.Service, configDocId string, ans TestAnswer) error {

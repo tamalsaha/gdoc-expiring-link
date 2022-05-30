@@ -8,7 +8,7 @@ require (
 	github.com/madflojo/tasks v1.0.3
 	github.com/pkg/errors v0.9.1
 	gomodules.xyz/encoding v0.0.5
-	gomodules.xyz/gdrive-utils v0.0.6
+	gomodules.xyz/gdrive-utils v0.0.7
 	google.golang.org/api v0.81.0
 )
 

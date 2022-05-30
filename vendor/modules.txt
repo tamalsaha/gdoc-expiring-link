@@ -94,7 +94,7 @@ golang.org/x/text/unicode/norm
 # gomodules.xyz/encoding v0.0.5
 ## explicit; go 1.17
 gomodules.xyz/encoding/csv/types
-# gomodules.xyz/gdrive-utils v0.0.6
+# gomodules.xyz/gdrive-utils v0.0.7
 ## explicit; go 1.17
 gomodules.xyz/gdrive-utils
 # google.golang.org/api v0.81.0
